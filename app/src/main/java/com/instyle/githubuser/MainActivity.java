@@ -1,24 +1,24 @@
 package com.instyle.githubuser;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.view.ViewCompat;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.app.SearchManager;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
-
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.instyle.githubuser.adapter.UsersAdapter;
@@ -40,14 +40,15 @@ import io.reactivex.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity {
 
 
-   @BindView(R.id._loading)
+    @BindView(R.id._loading)
     ProgressBar _loading;
     @BindView(R.id._userList)
     RecyclerView _userList;
+    @BindView(R.id.coordinator)
+    CoordinatorLayout coordinator;
 
     private SearchView searchView;
     BaseApiService callApiService;
-    List<Users> _userData = new ArrayList<>();
     List<displayUser> _displayUser = new ArrayList<>();
     UsersAdapter usersAdapter;
 
@@ -57,71 +58,86 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         ButterKnife.bind(this);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         callApiService = UtilsApi.getAPIService();
 
-        requestUserList();
+        //checking for network connectivity
+        if (!isNetworkAvailable()) {
+            Snackbar snackbar = Snackbar
+                    .make(coordinator, "No Network connection", Snackbar.LENGTH_LONG)
+                    .setAction("RETRY", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+
+                            requestUserList();
+                        }
+                    });
+
+            snackbar.show();
+        } else {
+            requestUserList();
+        }
+
 
     }
 
     private void requestUserList() {
+
         _loading.setVisibility(View.VISIBLE);
 
         callApiService.getUserList()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<List<Users>>() {
-            @Override
-            public void onSubscribe(Disposable d) {
+                    @Override
+                    public void onSubscribe(Disposable d) {
 
-            }
+                    }
 
-            @Override
-            public void onNext(List<Users> responseRepos) {
-                     Log.i("result",responseRepos.toString());
-
-
-
-                     for (int i = 0; i < responseRepos.size(); i++) {
-                    String name = responseRepos.get(i).getLogin();
-                    String userProfile = responseRepos.get(i).getAvatar_url();
-                    String html_url = responseRepos.get(i).getHtml_url();
+                    @Override
+                    public void onNext(List<Users> responseRepos) {
+                        Log.i("result", responseRepos.toString());
 
 
-                         Log.i("name",name);
-                         Log.i("userProfile",userProfile);
-
-                    _displayUser.add(new displayUser(name, userProfile,html_url));
-
-                }
-                usersAdapter = new UsersAdapter(getApplicationContext(), _displayUser);
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onComplete() {
-                _loading.setVisibility(View.GONE);
-                Toast.makeText(MainActivity.this,
-                        "Loading List data", Toast.LENGTH_SHORT).show();
+                        for (int i = 0; i < responseRepos.size(); i++) {
+                            String name = responseRepos.get(i).getLogin();
+                            String userProfile = responseRepos.get(i).getAvatar_url();
+                            String html_url = responseRepos.get(i).getHtml_url();
 
 
-                GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(), 2);
+                            Log.i("name", name);
+                            Log.i("userProfile", userProfile);
 
-                _userList.setLayoutManager(layoutManager);
+                            _displayUser.add(new displayUser(name, userProfile, html_url));
 
-                _userList.setItemAnimator(new DefaultItemAnimator());
-                _userList.setHasFixedSize(true);
-                _userList.setAdapter(usersAdapter);
+                        }
+                        usersAdapter = new UsersAdapter(getApplicationContext(), _displayUser);
+                    }
 
-            }
-        });
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        _loading.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this,
+                                "Loading List data", Toast.LENGTH_SHORT).show();
+
+
+                        GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(), 2);
+
+                        _userList.setLayoutManager(layoutManager);
+
+                        _userList.setItemAnimator(new DefaultItemAnimator());
+                        _userList.setHasFixedSize(true);
+                        _userList.setAdapter(usersAdapter);
+
+                    }
+                });
     }
-
 
 
     @Override
@@ -135,17 +151,17 @@ public class MainActivity extends AppCompatActivity {
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
         searchView.setMaxWidth(Integer.MAX_VALUE);
 
-       search(searchView);
+        search(searchView);
         return true;
     }
 
-    private void search(SearchView searchView){
+    private void search(SearchView searchView) {
         // listening to search query text change
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
 
-                Log.i("query",query);
+                Log.i("query", query);
                 // filter recycler view when query submitted
                 usersAdapter.getFilter().filter(query);
                 return false;
@@ -161,8 +177,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
+    public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
 
@@ -173,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
- @Override
+    @Override
     public void onBackPressed() {
         // close search view on back button pressed
         if (!searchView.isIconified()) {
@@ -183,4 +198,10 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 }

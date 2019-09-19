@@ -1,11 +1,8 @@
 package com.instyle.githubuser;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -13,13 +10,17 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.snackbar.Snackbar;
 import com.instyle.githubuser.adapter.ReposAdapter;
-import com.instyle.githubuser.adapter.UsersAdapter;
 import com.instyle.githubuser.apiutils.BaseApiService;
 import com.instyle.githubuser.model.Repo;
 import com.instyle.githubuser.model.RepoResponse;
 import com.instyle.githubuser.model.Users;
-import com.instyle.githubuser.model.displayUser;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -39,29 +40,38 @@ public class DetailActivity extends AppCompatActivity {
     @BindView(R.id.profileProgressBar)
     ProgressBar _loading;
 
-
     @BindView(R.id.username)
     TextView _userProfileName;
+
     @BindView(R.id.website)
     TextView _userWebsite;
- @BindView(R.id.tvPosts)
+
+    @BindView(R.id.tvPosts)
     TextView tvPosts;
- @BindView(R.id.tvFollowers)
+
+    @BindView(R.id.tvFollowers)
     TextView tvFollowers;
- @BindView(R.id.tvFollowing)
+
+    @BindView(R.id.tvFollowing)
     TextView tvFollowing;
- @BindView(R.id.profile_photo)
+
+    @BindView(R.id.profile_photo)
     CircleImageView profile_photo;
+
     @BindView(R.id._userRepos)
     RecyclerView _userRepos;
 
-
+    @BindView(R.id.coordinator)
+    CoordinatorLayout coordinator;
     BaseApiService mApiService;
     ReposAdapter mRepoAdapter;
     List<Repo> repoList = new ArrayList<>();
 
     int totalFollower;
     int totalFollowing;
+    String user = "";
+    String userProfile = "";
+    String htmlUrl = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,15 +81,46 @@ public class DetailActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.profileToobar);
         setSupportActionBar(toolbar);
+        if (getIntent().getStringExtra("user").isEmpty()) {
 
-        String user = getIntent().getStringExtra("user");
-        String userProfile = getIntent().getStringExtra("userProfile");
-        String htmlUrl = getIntent().getStringExtra("html_url");
+            Toast.makeText(DetailActivity.this, "Receiving  data failed", Toast.LENGTH_SHORT).show();
+
+        } else {
+            user = getIntent().getStringExtra("user");
+            _userProfileName.setText(user);
+
+        }
+
+        userProfile = getIntent().getStringExtra("userProfile");
+        htmlUrl = getIntent().getStringExtra("html_url");
 
 
         Log.i("result",user);
         Log.i("result",userProfile);
         Log.i("result",htmlUrl);
+
+//checking for network connectivity
+        if (!isNetworkAvailable()) {
+            Snackbar snackbar = Snackbar
+                    .make(coordinator, "No Network connection", Snackbar.LENGTH_LONG)
+                    .setAction("RETRY", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+
+                            requestRepos(user);
+                            requestTotalFollower(user);
+                            requestTotalFollowing(user);
+                        }
+                    });
+
+            snackbar.show();
+        } else {
+            requestRepos(user);
+            requestTotalFollower(user);
+            requestTotalFollowing(user);
+        }
+
+        _userWebsite.setText(htmlUrl);
 
         Picasso.get()
                 .load(userProfile)
@@ -87,13 +128,6 @@ public class DetailActivity extends AppCompatActivity {
                 .error(R.drawable.ic_launcher_background)
                 .into(profile_photo);
 
-
-        _userProfileName.setText(user);
-      
-        _userWebsite.setText(htmlUrl);
-        requestTotalFollower(user);
-        requestTotalFollowing(user);
-        requestRepos( user);
 
     }
     private void requestRepos(String username) {
@@ -148,8 +182,9 @@ public class DetailActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onNext(List<Users> RepoResponse) {
-                        totalFollower=RepoResponse.size();
+                    public void onNext(List<Users> repoResponse) {
+                        Log.i("repoResponse", repoResponse.toString());
+                        totalFollower = repoResponse.size();
 
                     }
 
@@ -167,17 +202,17 @@ public class DetailActivity extends AppCompatActivity {
     private void requestTotalFollowing(String username) {
 
 
-        mApiService.requestRepos(username)
+        mApiService.requestFollowing(username)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<List<RepoResponse>>() {
+                .subscribe(new Observer<List<Users>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
 
                     }
 
                     @Override
-                    public void onNext(List<RepoResponse> RepoResponse) {
+                    public void onNext(List<Users> RepoResponse) {
 
                         totalFollowing=RepoResponse.size();
                     }
@@ -199,5 +234,12 @@ public class DetailActivity extends AppCompatActivity {
         // close search view on back button pressed
 
         super.onBackPressed();
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 }
