@@ -1,12 +1,10 @@
 package com.instyle.githubuser.adapter;
 
 import android.content.Context;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,12 +24,12 @@ public class ReposAdapter extends
 
     private Context context;
     private List<Repo> list;
-    private AdapterCallback mAdapterCallback;
 
-    public ReposAdapter(Context context, List<Repo> list, AdapterCallback adapterCallback) {
+
+    public ReposAdapter(Context context, List<Repo> list) {
         this.context = context;
         this.list = list;
-        this.mAdapterCallback = adapterCallback;
+
     }
 
     @Override
@@ -77,7 +75,5 @@ public class ReposAdapter extends
         }
     }
 
-    public interface AdapterCallback {
-        void onRowClicked(int position);
-    }
+
 }

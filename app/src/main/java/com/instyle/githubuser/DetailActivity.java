@@ -13,11 +13,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.instyle.githubuser.adapter.ReposAdapter;
 import com.instyle.githubuser.apiutils.BaseApiService;
+import com.instyle.githubuser.apiutils.UtilsApi;
 import com.instyle.githubuser.model.Repo;
 import com.instyle.githubuser.model.RepoResponse;
 import com.instyle.githubuser.model.Users;
@@ -43,6 +46,9 @@ public class DetailActivity extends AppCompatActivity {
     @BindView(R.id.username)
     TextView _userProfileName;
 
+    @BindView(R.id.userLogin)
+    TextView userLogin;
+
     @BindView(R.id.website)
     TextView _userWebsite;
 
@@ -67,8 +73,6 @@ public class DetailActivity extends AppCompatActivity {
     ReposAdapter mRepoAdapter;
     List<Repo> repoList = new ArrayList<>();
 
-    int totalFollower;
-    int totalFollowing;
     String user = "";
     String userProfile = "";
     String htmlUrl = "";
@@ -81,6 +85,7 @@ public class DetailActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.profileToobar);
         setSupportActionBar(toolbar);
+        mApiService = UtilsApi.getAPIService();
         if (getIntent().getStringExtra("user").isEmpty()) {
 
             Toast.makeText(DetailActivity.this, "Receiving  data failed", Toast.LENGTH_SHORT).show();
@@ -88,6 +93,7 @@ public class DetailActivity extends AppCompatActivity {
         } else {
             user = getIntent().getStringExtra("user");
             _userProfileName.setText(user);
+            userLogin.setText(user);
 
         }
 
@@ -99,7 +105,8 @@ public class DetailActivity extends AppCompatActivity {
         Log.i("result",userProfile);
         Log.i("result",htmlUrl);
 
-//checking for network connectivity
+
+        //checking for network connectivity
         if (!isNetworkAvailable()) {
             Snackbar snackbar = Snackbar
                     .make(coordinator, "No Network connection", Snackbar.LENGTH_LONG)
@@ -115,6 +122,7 @@ public class DetailActivity extends AppCompatActivity {
 
             snackbar.show();
         } else {
+
             requestRepos(user);
             requestTotalFollower(user);
             requestTotalFollowing(user);
@@ -143,14 +151,17 @@ public class DetailActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onNext(List<RepoResponse> RepoResponse) {
-                        tvPosts.setText(RepoResponse.size());
-                        for (int i = 0; i < RepoResponse.size(); i++) {
-                            String name = RepoResponse.get(i).getName();
-                            String description = RepoResponse.get(i).getDescription();
+                    public void onNext(List<RepoResponse> responseRepos) {
+                        tvPosts.setText(Integer.toString(responseRepos.size()));
+                        Log.i("repoResponse", responseRepos.toString());
+
+                        for (int i = 0; i < responseRepos.size(); i++) {
+                            String name = responseRepos.get(i).getName();
+                            String description = responseRepos.get(i).getDescription();
 
                             repoList.add(new Repo(name, description));
                         }
+                        mRepoAdapter = new ReposAdapter(DetailActivity.this, repoList);
                     }
 
                     @Override
@@ -161,11 +172,16 @@ public class DetailActivity extends AppCompatActivity {
                     @Override
                     public void onComplete() {
                         _loading.setVisibility(View.GONE);
-                        Toast.makeText(DetailActivity.this, "Reciving repos data", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(DetailActivity.this, "loading data.....", Toast.LENGTH_SHORT).show();
 
-                        mRepoAdapter = new ReposAdapter(DetailActivity.this, repoList, null);
+
+                        GridLayoutManager layoutManager = new GridLayoutManager(getApplicationContext(), 1);
+
+                        _userRepos.setLayoutManager(layoutManager);
+
+                        _userRepos.setItemAnimator(new DefaultItemAnimator());
+                        _userRepos.setHasFixedSize(true);
                         _userRepos.setAdapter(mRepoAdapter);
-                        mRepoAdapter.notifyDataSetChanged();
                     }
                 });
     }
@@ -184,8 +200,8 @@ public class DetailActivity extends AppCompatActivity {
                     @Override
                     public void onNext(List<Users> repoResponse) {
                         Log.i("repoResponse", repoResponse.toString());
-                        totalFollower = repoResponse.size();
 
+                        tvFollowers.setText(Integer.toString(repoResponse.size()));
                     }
 
                     @Override
@@ -195,7 +211,7 @@ public class DetailActivity extends AppCompatActivity {
 
                     @Override
                     public void onComplete() {
-                        tvFollowers.setText(totalFollower);
+
                     }
                 });
     }
@@ -214,7 +230,8 @@ public class DetailActivity extends AppCompatActivity {
                     @Override
                     public void onNext(List<Users> RepoResponse) {
 
-                        totalFollowing=RepoResponse.size();
+
+                        tvFollowing.setText(Integer.toString(RepoResponse.size()));
                     }
 
                     @Override
@@ -224,7 +241,7 @@ public class DetailActivity extends AppCompatActivity {
 
                     @Override
                     public void onComplete() {
-                        tvFollowing.setText(totalFollowing);
+
                     }
                 });
     }

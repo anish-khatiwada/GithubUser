@@ -65,6 +65,7 @@
                 android:background="@drawable/white_grey_border_bottom">
 
                 <TextView
+                    android:id="@+id/userLogin"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Mitch"
@@ -72,20 +73,14 @@
                     android:textSize="16sp"
                     android:textStyle="bold"/>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="I live in Vancouver, BC"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"/>
+
 
                 <TextView
                     android:id="@+id/website"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="https://codingwithmitch.com"
+                    android:text="https://github.com/"
                     android:textColor="@color/link_blue"
                     android:textSize="16sp"
                     />
@@ -105,7 +100,7 @@
                     android:id="@+id/_userRepos"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
+                    android:layout_margin="16dp"
                     android:scrollbars="vertical" />
 
 

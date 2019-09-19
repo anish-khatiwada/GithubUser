@@ -162,15 +162,14 @@ public class MainActivity extends AppCompatActivity {
             public boolean onQueryTextSubmit(String query) {
 
                 Log.i("query", query);
-                // filter recycler view when query submitted
-                usersAdapter.getFilter().filter(query);
+
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String query) {
                 // filter recycler view when text is changed
-                usersAdapter.getFilter().filter(query);
+                if (usersAdapter != null) usersAdapter.getFilter().filter(query);
                 return true;
             }
         });

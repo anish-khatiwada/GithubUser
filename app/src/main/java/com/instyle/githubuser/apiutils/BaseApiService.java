@@ -16,7 +16,7 @@ public interface BaseApiService {
     @GET("users/{username}")
    Observable<List<RepoResponse>> requestUserDetails(@Path("username") String username);
 
-    @GET("users/{username}/repos")
+    @GET("/users/{username}/repos")
     Observable<List<RepoResponse>> requestRepos(@Path("username") String username);
 
     @GET("/users")
